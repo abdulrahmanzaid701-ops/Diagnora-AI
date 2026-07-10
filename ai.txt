@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Second Look — AI deep research for your symptoms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --box-black: #061A22;
+    --film: #0E3049;
+    --film-2: #123B57;
+    --film-light: #BFE6EF;
+    --cyan: #6FE0DB;
+    --paper: #EEF2F1;
+    --card: #FBFCFB;
+    --ink: #0A222B;
+    --ink-soft: #4A6068;
+    --alert: #FF6B45;
+    --alert-deep: #C4431F;
+    --line: #D7DEDC;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.55;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0;}
+  a{color:inherit;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 32px; position:relative;}
+
+  /* registration marks — film mounting ticks */
+  .reg{position:absolute; width:14px; height:14px; pointer-events:none;}
+  .reg::before,.reg::after{content:""; position:absolute; background:currentColor;}
+  .reg::before{width:14px; height:1px; top:6px; left:0;}
+  .reg::after{width:1px; height:14px; left:6px; top:0;}
+  .reg.tl{top:14px; left:14px; color:var(--cyan);}
+  .reg.tr{top:14px; right:14px; left:auto; color:var(--cyan);}
+  .reg.bl{bottom:14px; left:14px; color:var(--film-light); opacity:.5;}
+  .reg.br{bottom:14px; right:14px; left:auto; color:var(--film-light); opacity:.5;}
+
+  /* NAV */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(6,26,34,0.92);
+    border-bottom:1px solid rgba(111,224,219,0.18);
+  }
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:64px;}
+  .brand{display:flex; align-items:center; gap:8px; font-family:'IBM Plex Mono', monospace; font-weight:500; font-size:15px; letter-spacing:0.02em; color:var(--film-light);}
+  .brand .dot{width:8px; height:8px; border-radius:50%; background:var(--cyan); box-shadow:0 0 0 3px rgba(111,224,219,0.18), 0 0 10px rgba(111,224,219,0.6);}
+  .nav-links{display:flex; gap:28px; font-size:14px; color:var(--film-light); opacity:.75;}
+  .nav-links a{text-decoration:none;}
+  .nav-links a:hover{opacity:1; color:var(--cyan);}
+  .nav-cta{
+    font-size:14px; font-weight:500; padding:9px 16px; border-radius:var(--radius);
+    background:var(--alert); color:#1A0800; text-decoration:none;
+  }
+  @media (max-width:780px){ .nav-links{display:none;} }
+
+  /* HERO — lightbox */
+  header.hero{
+    background:
+      radial-gradient(ellipse 900px 500px at 20% -10%, rgba(111,224,219,0.10), transparent 60%),
+      linear-gradient(180deg, var(--box-black), var(--film) 140%);
+    padding:80px 0 56px;
+    position:relative;
+    overflow:hidden;
+  }
+  .scanline{
+    position:absolute; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity:0.55; box-shadow:0 0 14px 2px rgba(111,224,219,0.5);
+    animation:sweep 6s linear infinite;
+  }
+  @keyframes sweep{ 0%{top:0%;} 100%{top:100%;} }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--cyan); display:flex; align-items:center; gap:10px; margin-bottom:20px;
+  }
+  .eyebrow::before{content:""; width:22px; height:1px; background:var(--cyan);}
+  h1.headline{font-size:clamp(34px, 5vw, 56px); line-height:1.06; max-width:760px; letter-spacing:-0.01em; color:#F4FBFA;}
+  .sub{max-width:560px; font-size:18px; color:var(--film-light); opacity:.85; margin-top:18px;}
+
+  .intake{
+    margin-top:36px; background:rgba(10,34,44,0.55); border:1px solid rgba(111,224,219,0.28); border-radius:6px;
+    padding:20px; max-width:760px; backdrop-filter:blur(2px);
+  }
+  .intake label{display:block; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan); margin-bottom:10px;}
+  .intake-row{display:flex; gap:10px; align-items:flex-start;}
+  textarea#symptomInput{
+    flex:1; resize:none; border:1px solid rgba(111,224,219,0.3); border-radius:var(--radius);
+    padding:12px 14px; font-family:'IBM Plex Sans', sans-serif; font-size:15px; color:#EAF6F4;
+    background:rgba(6,26,34,0.6); min-height:52px;
+  }
+  textarea#symptomInput::placeholder{color:#7FA8AC;}
+  textarea#symptomInput:focus{outline:2px solid var(--cyan); outline-offset:1px;}
+  button#runBtn{
+    background:var(--alert); color:#1A0800; border:none; border-radius:var(--radius);
+    padding:0 20px; height:52px; font-weight:600; font-size:14.5px; cursor:pointer;
+    white-space:nowrap; transition:background .15s ease;
+  }
+  button#runBtn:hover{background:#ff835f;}
+  button#runBtn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  button#runBtn:disabled{opacity:0.55; cursor:default;}
+  .intake-note{font-size:12.5px; color:#9FC6C2; margin-top:10px;}
+  .intake-note strong{color:var(--alert);}
+
+  /* CONSOLE */
+  section.console-section{padding:0 0 84px; background:linear-gradient(180deg, var(--film) 0%, var(--box-black) 100%); position:relative;}
+  .console-grid{
+    display:grid; grid-template-columns: 1.15fr 0.85fr; gap:0;
+    border:1px solid rgba(111,224,219,0.25); border-radius:8px; overflow:hidden;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,0.6);
+    position:relative;
+  }
+  @media (max-width:860px){ .console-grid{grid-template-columns:1fr;} }
+
+  .trace-pane{background:rgba(6,20,26,0.75); color:#DCEFEC; padding:22px 24px; min-height:420px; position:relative;}
+  .trace-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+  .trace-title{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);}
+  .trace-status{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--alert); display:flex; align-items:center; gap:6px;}
+  .trace-status .pulse{width:7px; height:7px; border-radius:50%; background:var(--alert); animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.25;}}
+  .trace-log{font-family:'IBM Plex Mono', monospace; font-size:13px; line-height:1.9;}
+  .trace-line{opacity:0; transform:translateY(3px); animation:fadeIn .35s ease forwards; margin-bottom:4px;}
+  .trace-line .tag{color:var(--alert); margin-right:8px;}
+  .trace-line.done .tag{color:var(--cyan);}
+  @keyframes fadeIn{to{opacity:1; transform:translateY(0);}}
+  .trace-empty{color:#5E8388; font-size:13.5px; font-family:'IBM Plex Mono', monospace;}
+
+  .answer-pane{padding:22px 24px; background:var(--card);}
+  .answer-head{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;}
+  .answer-head .badge{background:#FBE3D6; color:var(--alert-deep); padding:3px 8px; border-radius:20px; font-size:10.5px;}
+  .finding{border-bottom:1px solid var(--line); padding:14px 0;}
+  .finding:first-child{padding-top:0;}
+  .finding:last-child{border-bottom:none;}
+  .finding-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+  .finding-name{font-weight:600; font-family:'Fraunces', serif; font-size:16.5px; color:var(--ink);}
+  .finding-fit{font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--alert-deep);}
+  .finding-desc{font-size:14px; color:var(--ink-soft); margin-top:4px;}
+  .cite{font-family:'IBM Plex Mono', monospace; font-size:11px; color:#1E7C90; margin-top:6px;}
+  .flag-box{
+    margin-top:16px; background:#FFF0EA; border:1px solid #F3C3AD; border-radius:var(--radius);
+    padding:12px 14px; font-size:13.5px; color:#8A2E0F;
+  }
+  .flag-box strong{display:block; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:4px; font-family:'IBM Plex Mono', monospace;}
+  .answer-empty{color:var(--ink-soft); font-size:14px;}
+
+  /* HOW IT WORKS */
+  section.steps{padding:76px 0; background:var(--card); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .steps-head{max-width:520px; margin-bottom:44px;}
+  .steps-head h2{font-size:32px; color:var(--ink);}
+  .steps-head p{color:var(--ink-soft); margin-top:10px; font-size:15.5px;}
+  .step-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  @media (max-width:860px){ .step-grid{grid-template-columns:1fr 1fr;} }
+  @media (max-width:520px){ .step-grid{grid-template-columns:1fr;} }
+  .step{background:var(--card); padding:26px 22px;}
+  .step .num{font-family:'IBM Plex Mono', monospace; color:var(--alert-deep); font-size:13px; margin-bottom:14px;}
+  .step h3{font-size:17px; color:var(--ink);}
+  .step p{font-size:13.8px; color:var(--ink-soft); margin-top:8px;}
+
+  /* TRUST */
+  section.trust{padding:80px 0;}
+  .trust-grid{display:grid; grid-template-columns:1fr 1fr; gap:52px;}
+  @media (max-width:820px){ .trust-grid{grid-template-columns:1fr;} }
+  .trust h2{font-size:30px; color:var(--ink); margin-bottom:14px;}
+  .trust p{color:var(--ink-soft); font-size:15px;}
+  .sources{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;}
+  .source-pill{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; border:1px solid var(--line);
+    background:var(--card); padding:7px 12px; border-radius:20px; color:var(--ink-soft);
+  }
+  .safety-box{
+    background:var(--box-black); color:#DCEFEC; border-radius:8px; padding:28px 30px; position:relative;
+    border:1px solid rgba(111,224,219,0.2);
+  }
+  .safety-box h3{color:#F4FBFA; font-size:19px; margin-bottom:12px; font-family:'Fraunces', serif;}
+  .safety-box p{font-size:14px; color:#9FC6C2; margin:0 0 9px;}
+  .safety-box p:last-child{margin-bottom:0; color:var(--alert); opacity:0.95;}
+
+  footer{border-top:1px solid var(--line); padding:34px 0; background:var(--paper);}
+  .footer-row{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;}
+  footer .brand{color:var(--ink);}
+  footer .brand .dot{background:var(--alert); box-shadow:none;}
+  footer .foot-note{font-size:12.5px; color:var(--ink-soft); max-width:520px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition:none !important; scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>SECOND LOOK</div>
+    <div class="nav-links">
+      <a href="#console">Try it</a>
+      <a href="#how">How it works</a>
+      <a href="#trust">Sources &amp; safety</a>
+    </div>
+    <a class="nav-cta" href="#console">Run a search</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="scanline"></div>
+  <div class="wrap">
+    <div class="reg tl"></div>
+    <div class="reg tr"></div>
+    <div class="eyebrow">AI-assisted symptom research</div>
+    <h1 class="headline">Describe what's wrong. Watch us research it properly.</h1>
+    <p class="sub">Second Look reads medical literature, cross-checks your symptoms against known conditions, and shows every step it took — so you get more than a guess.</p>
+
+    <div class="intake">
+      <label for="symptomInput">What's going on?</label>
+      <div class="intake-row">
+        <textarea id="symptomInput" placeholder="e.g. sharp pain in my lower right abdomen that started last night, worse when I press on it, mild fever"></textarea>
+        <button id="runBtn">Research this</button>
+      </div>
+      <p class="intake-note"><strong>Not a doctor.</strong> Second Look is a research tool for understanding possibilities — it doesn't diagnose. If this is an emergency, contact local emergency services now.</p>
+    </div>
+  </div>
+</header>
+
+<section class="console-section" id="console">
+  <div class="wrap">
+    <div class="console-grid">
+      <div class="reg bl"></div>
+      <div class="reg br"></div>
+      <div class="trace-pane">
+        <div class="trace-head">
+          <span class="trace-title">Research trace</span>
+          <span class="trace-status" id="traceStatus"><span class="pulse"></span>idle</span>
+        </div>
+        <div class="trace-log" id="traceLog">
+          <div class="trace-empty">Enter a symptom above and select "Research this" to see the process run.</div>
+        </div>
+      </div>
+      <div class="answer-pane">
+        <div class="answer-head"><span>Findings</span><span class="badge">example output</span></div>
+        <div id="answerBody">
+          <p class="answer-empty">Findings will appear here once the trace finishes, ranked by how well they fit what you described, each with a source.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="steps" id="how">
+  <div class="wrap">
+    <div class="steps-head">
+      <h2>The pipeline, in order</h2>
+      <p>Each search runs through four passes. Nothing is skipped, and every claim in your findings can be traced back to a step here.</p>
+    </div>
+    <div class="step-grid">
+      <div class="step">
+        <div class="num mono">01</div>
+        <h3>Intake</h3>
+        <p>Your description is parsed into structured signs — location, onset, severity, and what makes it better or worse.</p>
+      </div>
+      <div class="step">
+        <div class="num mono">02</div>
+        <h3>Literature search</h3>
+        <p>Those signs are matched against clinical references and recent research to surface conditions that fit the pattern.</p>
+      </div>
+      <div class="step">
+        <div class="num mono">03</div>
+        <h3>Cross-check</h3>
+        <p>Candidates are weighed against each other and ruled in or out based on how closely they match your specifics.</p>
+      </div>
+      <div class="step">
+        <div class="num mono">04</div>
+        <h3>Report</h3>
+        <p>Remaining possibilities are ranked and cited, with clear flags for anything that warrants urgent care.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="trust" id="trust">
+  <div class="wrap trust-grid">
+    <div>
+      <h2>Where the research comes from</h2>
+      <p>Second Look draws from peer-reviewed literature and established clinical references, not open web forums. Every finding links back to where it came from, so you can read further or bring it to a real appointment.</p>
+      <div class="sources">
+        <span class="source-pill">PubMed</span>
+        <span class="source-pill">Mayo Clinic</span>
+        <span class="source-pill">NHS</span>
+        <span class="source-pill">NIH</span>
+        <span class="source-pill">Cochrane Library</span>
+      </div>
+    </div>
+    <div class="safety-box">
+      <h3>What Second Look is — and isn't</h3>
+      <p>It's a research aid for narrowing down possibilities before you talk to a clinician. It reads faster and wider than any one person can in the moment.</p>
+      <p>It isn't a diagnosis, a prescription, or a substitute for examination. It can't feel your pulse, run a test, or know your full history the way a doctor can.</p>
+      <p>Sudden severe symptoms — chest pain, trouble breathing, sudden weakness — need emergency care immediately, not a search.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="brand mono"><span class="dot"></span>SECOND LOOK</div>
+    <p class="foot-note">This page is a product demo. Findings shown are illustrative examples of the research format, not a live medical evaluation. Always confirm with a licensed clinician.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const btn = document.getElementById('runBtn');
+  const input = document.getElementById('symptomInput');
+  const traceLog = document.getElementById('traceLog');
+  const traceStatus = document.getElementById('traceStatus');
+  const answerBody = document.getElementById('answerBody');
+
+  const traceSteps = [
+    { tag: '[intake]',   text: 'Parsing description into structured signs…' },
+    { tag: '[search]',   text: 'Searching clinical references for matching patterns…' },
+    { tag: '[search]',   text: 'Pulling related literature from PubMed and NHS guidance…' },
+    { tag: '[cross-chk]',text: 'Weighing candidates against onset, location, and severity…' },
+    { tag: '[cross-chk]',text: 'Ruling out poor fits, ranking what remains…' },
+    { tag: '[report]',   text: 'Assembling findings and attaching sources…' },
+  ];
+
+  const exampleFindings = [
+    {
+      name: 'Appendicitis',
+      fit: 'strong fit',
+      desc: 'Pain that starts near the navel and migrates to the lower right abdomen, worsened by pressure, is a classic pattern — especially with fever.',
+      cite: 'source: NHS — Appendicitis, Mayo Clinic Symptoms & Causes'
+    },
+    {
+      name: 'Ovarian cyst (if applicable)',
+      fit: 'possible fit',
+      desc: 'Can cause similar one-sided lower abdominal pain; usually distinguished by menstrual timing and pain quality.',
+      cite: 'source: NIH — Ovarian Cysts Overview'
+    },
+    {
+      name: 'Gastroenteritis',
+      fit: 'weaker fit',
+      desc: 'Common cause of abdominal discomfort, but typically comes with more diffuse pain and digestive symptoms rather than a fixed, tender point.',
+      cite: 'source: Cochrane Library — Acute Gastroenteritis Review'
+    }
+  ];
+
+  let running = false;
+
+  function resetPanes(){
+    traceLog.innerHTML = '';
+    answerBody.innerHTML = '<p class="answer-empty">Running research…</p>';
+  }
+
+  function setStatus(text, active){
+    traceStatus.innerHTML = '<span class="pulse" style="' + (active ? '' : 'animation:none;opacity:.4;') + '"></span>' + text;
+  }
+
+  function appendLine(step){
+    return new Promise(resolve => {
+      const line = document.createElement('div');
+      line.className = 'trace-line';
+      line.innerHTML = '<span class="tag">' + step.tag + '</span>' + step.text;
+      traceLog.appendChild(line);
+      setTimeout(() => {
+        line.classList.add('done');
+        resolve();
+      }, 520);
+    });
+  }
+
+  function renderAnswer(){
+    let html = '';
+    exampleFindings.forEach(f => {
+      html += '<div class="finding">' +
+        '<div class="finding-top"><span class="finding-name">' + f.name + '</span><span class="finding-fit mono">' + f.fit + '</span></div>' +
+        '<div class="finding-desc">' + f.desc + '</div>' +
+        '<div class="cite">' + f.cite + '</div>' +
+      '</div>';
+    });
+    html += '<div class="flag-box"><strong>Seek urgent care if</strong>Pain becomes severe or constant, you develop a high fever, or you can\'t keep fluids down. These can signal something that needs same-day attention.</div>';
+    answerBody.innerHTML = html;
+  }
+
+  async function runResearch(){
+    if(running) return;
+    running = true;
+    btn.disabled = true;
+    btn.textContent = 'Researching…';
+    resetPanes();
+    setStatus('running', true);
+
+    for(let i = 0; i < traceSteps.length; i++){
+      await appendLine(traceSteps[i]);
+      traceLog.scrollTop = traceLog.scrollHeight;
+    }
+
+    setStatus('complete', false);
+    renderAnswer();
+    btn.disabled = false;
+    btn.textContent = 'Research this';
+    running = false;
+  }
+
+  btn.addEventListener('click', runResearch);
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) runResearch();
+  });
+})();
+</script>
+
+</body>
+</html>
